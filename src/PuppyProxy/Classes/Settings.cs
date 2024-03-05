@@ -12,15 +12,8 @@ namespace PuppyProxy
     public class Settings
     {
         #region Public-Members
-
-        /// <summary>
-        /// Enable or disable the console.
-        /// </summary>
         public bool EnableConsole { get; set; } = true;
-
-        /// <summary>
-        /// Logging settings.
-        /// </summary>
+        
         public SettingsLogging Logging
         {
             get { return _Logging; }

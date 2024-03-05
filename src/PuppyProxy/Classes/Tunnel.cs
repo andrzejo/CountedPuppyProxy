@@ -519,7 +519,7 @@ namespace PuppyProxy
                     data = await StreamReadAsync(ClientTcpClient);
                     if (data != null && data.Length > 0)
                     {
-                        Console.WriteLine("ClientReaderAsync " + Source() + " to " + Destination() + " read " + data.Length + " bytes");
+                        //Console.WriteLine("ClientReaderAsync " + Source() + " to " + Destination() + " read " + data.Length + " bytes");
                         Counter.IncrementClientBytes(data.Length);
                         ServerTcpClient.Client.Send(data);
                         //Console.WriteLine($"Bytes read: {data.Length}");
@@ -556,7 +556,7 @@ namespace PuppyProxy
                     data = await StreamReadAsync(ServerTcpClient);
                     if (data != null && data.Length > 0)
                     {
-                        Console.WriteLine("ServerReaderAsync " + Destination() + " to " + Source() + " read " + data.Length + " bytes");
+                       //Console.WriteLine("ServerReaderAsync " + Destination() + " to " + Source() + " read " + data.Length + " bytes");
                         Counter.IncrementServerBytes(data.Length);
                         ClientTcpClient.Client.Send(data);
                         data = null;
