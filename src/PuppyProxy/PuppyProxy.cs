@@ -83,6 +83,7 @@ namespace PuppyProxy
                             Console.WriteLine(" c/cls       Clear the screen");
                             Console.WriteLine(" q/quit      Exit PuppyProxy");
                             Console.WriteLine(" tunnels     List current CONNECT tunnels");
+                            Console.WriteLine(" stats       List transfer stats");
                             Console.WriteLine("");
                             break;
 
@@ -105,6 +106,13 @@ namespace PuppyProxy
                                     Console.WriteLine(" ID " + curr.Key + ": " + curr.Value);
                             else
                                 Console.WriteLine("None");
+
+                            break;
+                        case "stats":
+                            var stats = _Counter.Counter;
+                            Console.WriteLine("Transfer stats:");
+                            Console.WriteLine($"  {stats.HumanReadable()}");
+                            Console.WriteLine($"  {stats}");
 
                             break;
                     }
@@ -166,7 +174,7 @@ namespace PuppyProxy
                     _TcpListener = new TcpListener(IPAddress.Parse(_Settings.Proxy.ListenerIpAddress),
                         _Settings.Proxy.ListenerPort);
 
-                _Counter = new TransferCounter(_Settings.Proxy.ListenerPort, _Settings.RootDir);
+                _Counter = new TransferCounter(_Settings.Proxy.ListenerPort, _Settings.RootDir, _Logging);
                 _TcpListener.Start();
 
                 while (!_CancelToken.IsCancellationRequested)
@@ -330,15 +338,25 @@ namespace PuppyProxy
                 client.NoDelay = true;
                 client.Client.NoDelay = true;
 
-                var proxyClient = new HttpProxyClient("my-local.proxy", 80);
+                server = new TcpClient();
 
                 try
                 {
-                    server = proxyClient.CreateConnection(req.DestHostname, req.DestHostPort);
+                    if (_Settings.OutputProxy.Enabled)
+                    {
+                        IProxyClient proxyClient = CreateProxy(_Settings.OutputProxy);
+                        server = proxyClient.CreateConnection(req.DestHostname, req.DestHostPort);
+                    }
+                    else
+                    {
+                        server.Connect(req.DestHostname, req.DestHostPort);
+                    }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    _Logging.Debug("ConnectRequest connect failed to " + req.DestHostname + ":" + req.DestHostPort);
+                    _Logging.Exception("PuppyProxy", "ConnectRequest", e);
+                    _Logging.Debug("ConnectRequest connect failed to " + req.DestHostname + ":" + req.DestHostPort +
+                                   (_Settings.OutputProxy.Enabled ? " using output proxy" : " without output proxy"));
                     return;
                 }
 
@@ -378,6 +396,52 @@ namespace PuppyProxy
                 if (client != null) client.Dispose();
 
                 if (server != null) server.Dispose();
+            }
+        }
+
+        private static IProxyClient CreateProxy(OutputProxy outputProxy)
+        {
+            var toLoggable = new Func<string, string, string, string>((val, ifEmpty, ifSet) =>
+                string.IsNullOrEmpty(val) ? ifEmpty : (ifSet ?? val));
+
+            var host = outputProxy.Host;
+            var port = outputProxy.Port;
+            var user = string.IsNullOrEmpty(outputProxy.User) ? null : outputProxy.User;
+            var pass = string.IsNullOrEmpty(outputProxy.Password) ? null : outputProxy.Password;
+
+            _Logging.Debug($"Create proxy {outputProxy.Type} - " +
+                           $"Host: {host}," +
+                           $" Port: {port}," +
+                           $" User: {toLoggable(user, "(empty)", null)}," +
+                           $" Password: {toLoggable(pass, "(empty)", "****")}");
+
+            switch (outputProxy.Type)
+            {
+                case OutputProxy.ProxyType.Socks4:
+                {
+                    return new Socks4ProxyClient
+                    {
+                        ProxyHost = host,
+                        ProxyPort = port,
+                        ProxyUserId = user
+                    };
+                }
+                case OutputProxy.ProxyType.Socks5:
+                {
+                    return new Socks5ProxyClient()
+                    {
+                        ProxyHost = host,
+                        ProxyPort = port,
+                        ProxyUserName = user,
+                        ProxyPassword = user
+                    };
+                }
+                default:
+                {
+                    return !string.IsNullOrEmpty(user)
+                        ? new HttpProxyClient(host, port, user, pass)
+                        : new HttpProxyClient(host, port);
+                }
             }
         }
 

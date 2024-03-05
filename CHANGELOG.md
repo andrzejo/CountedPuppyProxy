@@ -2,11 +2,15 @@
 
 ## Current Version
 
+- Add transfer counter
+- Add proxy
+
+
+## Previous Versions
+
 v1.1.1
 
 - Fix for multi-platform
-
-## Previous Versions
 
 v1.1.0
 

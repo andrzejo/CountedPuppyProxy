@@ -2,21 +2,41 @@
 using System.IO;
 using System.Net;
 using System.Text;
-using WatsonWebserver;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace PuppyProxy
 {
-    /// <summary>
-    /// System settings.
-    /// </summary>
     public class Settings
     {
+        #region Constructors-and-Factories
+
+        public static Settings FromFile(string filename)
+        {
+            if (string.IsNullOrEmpty(filename)) throw new ArgumentNullException(nameof(filename));
+
+            var ret = new Settings();
+
+            if (!File.Exists(filename))
+            {
+                Console.WriteLine("Creating default configuration in " + filename);
+                File.WriteAllBytes(filename, Encoding.UTF8.GetBytes(Common.SerializeJson(ret, true)));
+                return ret;
+            }
+
+            ret = Common.DeserializeJson<Settings>(File.ReadAllBytes(filename));
+            return ret;
+        }
+
+        #endregion
+
         #region Public-Members
+
         public bool EnableConsole { get; set; } = true;
-        
+
         public SettingsLogging Logging
         {
-            get { return _Logging; }
+            get => _Logging;
             set
             {
                 if (value == null) _Logging = new SettingsLogging();
@@ -33,29 +53,28 @@ namespace PuppyProxy
             }
             set
             {
-                if (value == null)
-                {
-                    _RootDir = DefaultRootDir;
-                }
-                else
-                {
-                    _RootDir = value;
-                }
-
+                _RootDir = string.IsNullOrEmpty(value) ? DefaultRootDir : value;
                 Directory.CreateDirectory(_RootDir);
             }
         }
 
-        /// <summary>
-        /// Proxy server settings.
-        /// </summary>
         public SettingsProxy Proxy
         {
-            get { return _Proxy; }
+            get => _Proxy;
             set
             {
                 if (value == null) _Proxy = new SettingsProxy();
                 else _Proxy = value;
+            }
+        }
+
+        public OutputProxy OutputProxy
+        {
+            get => _OutputProxy;
+            set
+            {
+                if (value == null) _OutputProxy = new OutputProxy();
+                else _OutputProxy = value;
             }
         }
 
@@ -64,151 +83,116 @@ namespace PuppyProxy
         #region Private-Members
 
         private const string DefaultRootDir = @"c:\PuppyProxy";
+
         private SettingsLogging _Logging = new SettingsLogging();
         private SettingsProxy _Proxy = new SettingsProxy();
+        private OutputProxy _OutputProxy = new OutputProxy();
         private string _RootDir = DefaultRootDir;
-
-        #endregion
-
-        #region Constructors-and-Factories
-
-        /// <summary>
-        /// Load system settings from file.
-        /// </summary>
-        /// <param name="filename">The file from which to load.</param>
-        /// <returns>Settings object.</returns>
-        public static Settings FromFile(string filename)
-        {
-            if (String.IsNullOrEmpty(filename)) throw new ArgumentNullException(nameof(filename));
-
-            Settings ret = new Settings();
-
-            if (!File.Exists(filename))
-            {
-                Console.WriteLine("Creating default configuration in " + filename);
-                File.WriteAllBytes(filename, Encoding.UTF8.GetBytes(Common.SerializeJson(ret, true)));
-                return ret;
-            }
-            else
-            {
-                ret = Common.DeserializeJson<Settings>(File.ReadAllBytes(filename));
-                return ret;
-            }
-        }
-
-        #endregion
-
-        #region Public-Methods
-
-        #endregion
-
-        #region Private-Methods
 
         #endregion
     }
 
-    /// <summary>
-    /// Logging settings.
-    /// </summary>
     public class SettingsLogging
     {
-        /// <summary>
-        /// Enable or disable logging to syslog.
-        /// </summary>
+        private readonly int _MinimumLevel = 0;
+        private readonly int _SyslogServerPort = 514;
         public bool SyslogEnable { get; set; } = true;
-
-        /// <summary>
-        /// Enable or disable logging to the console.
-        /// </summary>
         public bool ConsoleEnable { get; set; } = true;
 
-        /// <summary>
-        /// Minimum severity required before sending a log message (0 through 7).
-        /// </summary>
         public int MinimumLevel
         {
-            get { return _MinimumLevel; }
+            get => _MinimumLevel;
             set
             {
                 if (value < 0 || value > 7) throw new ArgumentOutOfRangeException(nameof(MinimumLevel));
             }
         }
 
-        /// <summary>
-        /// IP address of the syslog server.
-        /// </summary>
         public string SyslogServerIp { get; set; } = "127.0.0.1";
 
-        /// <summary>
-        /// UDP port on which the syslog server is listening.
-        /// </summary>
         public int SyslogServerPort
         {
-            get { return _SyslogServerPort; }
+            get => _SyslogServerPort;
             set
             {
                 if (value < 0 || value > 65535) throw new ArgumentOutOfRangeException(nameof(SyslogServerPort));
             }
         }
-
-        private int _MinimumLevel = 0;
-        private int _SyslogServerPort = 514;
     }
 
-    /// <summary>
-    /// Proxy server settings.
-    /// </summary>
     public class SettingsProxy
     {
-        /// <summary>
-        /// Enable or disable connections to sites with certificates that cannot be validated.
-        /// </summary>
+        private readonly int _ListenerPort = 8000;
+        private readonly int _MaxThreads = 256;
+        private string _ListenerIpAddress = "127.0.0.1";
         public bool AcceptInvalidCertificates { get; set; } = true;
 
-        /// <summary>
-        /// The TCP port on which to listen.
-        /// </summary>
         public int ListenerPort
         {
-            get { return _ListenerPort; }
+            get => _ListenerPort;
             set
             {
                 if (value < 0 || value > 65535) throw new ArgumentOutOfRangeException(nameof(ListenerPort));
             }
         }
 
-        /// <summary>
-        /// The DNS hostname or IP address on which to listen.
-        /// </summary>
         public string ListenerIpAddress
         {
-            get { return _ListenerIpAddress; }
+            get => _ListenerIpAddress;
             set
             {
-                if (String.IsNullOrEmpty(value)) throw new ArgumentNullException(nameof(ListenerIpAddress));
+                if (string.IsNullOrEmpty(value)) throw new ArgumentNullException(nameof(ListenerIpAddress));
                 _ListenerIpAddress = IPAddress.Parse(value).ToString();
             }
         }
 
-        /// <summary>
-        /// Enable or disable SSL.
-        /// </summary>
         public bool Ssl { get; set; } = false;
 
-        /// <summary>
-        /// Maximum number of threads to support.
-        /// </summary>
         public int MaxThreads
         {
-            get { return _MaxThreads; }
+            get => _MaxThreads;
             set
             {
                 if (value < 1) throw new ArgumentOutOfRangeException(nameof(MaxThreads));
             }
         }
+    }
 
-        private int _ListenerPort = 8000;
-        private int _MaxThreads = 256;
-        private string _ListenerIpAddress = "127.0.0.1";
+    public class OutputProxy
+    {
+        public enum ProxyType
+        {
+            Http,
+            Socks4,
+            Socks5
+        }
+
+        private string _Host;
+        private int _Port;
+
+        public int Port
+        {
+            get => _Port;
+            set
+            {
+                if (value < 0 || value > 65535)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(_Port));
+                }
+
+                _Port = value;
+            }
+        }
+
+        public string Host { get; set; } = "";
+
+        public string User { get; set; } = "";
+
+        public string Password { get; set; } = "";
+
+        public bool Enabled { get; set; } = false;
+
+        [JsonConverter(typeof(StringEnumConverter))]
+        public ProxyType Type { get; set; } = ProxyType.Http;
     }
 }
