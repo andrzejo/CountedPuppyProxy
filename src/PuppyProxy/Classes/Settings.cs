@@ -17,20 +17,39 @@ namespace PuppyProxy
         /// Enable or disable the console.
         /// </summary>
         public bool EnableConsole { get; set; } = true;
-         
+
         /// <summary>
         /// Logging settings.
         /// </summary>
         public SettingsLogging Logging
         {
-            get
-            {
-                return _Logging;
-            }
+            get { return _Logging; }
             set
             {
                 if (value == null) _Logging = new SettingsLogging();
                 else _Logging = value;
+            }
+        }
+
+        public string RootDir
+        {
+            get
+            {
+                Directory.CreateDirectory(_RootDir);
+                return _RootDir;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    _RootDir = DefaultRootDir;
+                }
+                else
+                {
+                    _RootDir = value;
+                }
+
+                Directory.CreateDirectory(_RootDir);
             }
         }
 
@@ -39,10 +58,7 @@ namespace PuppyProxy
         /// </summary>
         public SettingsProxy Proxy
         {
-            get
-            {
-                return _Proxy;
-            }
+            get { return _Proxy; }
             set
             {
                 if (value == null) _Proxy = new SettingsProxy();
@@ -54,8 +70,10 @@ namespace PuppyProxy
 
         #region Private-Members
 
+        private const string DefaultRootDir = @"c:\PuppyProxy";
         private SettingsLogging _Logging = new SettingsLogging();
         private SettingsProxy _Proxy = new SettingsProxy();
+        private string _RootDir = DefaultRootDir;
 
         #endregion
 
@@ -116,10 +134,7 @@ namespace PuppyProxy
         /// </summary>
         public int MinimumLevel
         {
-            get
-            {
-                return _MinimumLevel;
-            }
+            get { return _MinimumLevel; }
             set
             {
                 if (value < 0 || value > 7) throw new ArgumentOutOfRangeException(nameof(MinimumLevel));
@@ -136,10 +151,7 @@ namespace PuppyProxy
         /// </summary>
         public int SyslogServerPort
         {
-            get
-            {
-                return _SyslogServerPort;
-            }
+            get { return _SyslogServerPort; }
             set
             {
                 if (value < 0 || value > 65535) throw new ArgumentOutOfRangeException(nameof(SyslogServerPort));
@@ -165,10 +177,7 @@ namespace PuppyProxy
         /// </summary>
         public int ListenerPort
         {
-            get
-            {
-                return _ListenerPort;
-            }
+            get { return _ListenerPort; }
             set
             {
                 if (value < 0 || value > 65535) throw new ArgumentOutOfRangeException(nameof(ListenerPort));
@@ -180,10 +189,7 @@ namespace PuppyProxy
         /// </summary>
         public string ListenerIpAddress
         {
-            get
-            {
-                return _ListenerIpAddress;
-            }
+            get { return _ListenerIpAddress; }
             set
             {
                 if (String.IsNullOrEmpty(value)) throw new ArgumentNullException(nameof(ListenerIpAddress));
@@ -201,10 +207,7 @@ namespace PuppyProxy
         /// </summary>
         public int MaxThreads
         {
-            get
-            {
-                return _MaxThreads;
-            }
+            get { return _MaxThreads; }
             set
             {
                 if (value < 1) throw new ArgumentOutOfRangeException(nameof(MaxThreads));

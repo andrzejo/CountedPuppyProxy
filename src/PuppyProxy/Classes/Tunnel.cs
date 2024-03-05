@@ -104,16 +104,16 @@ namespace PuppyProxy
         /// <param name="destHostPort">Destination host port.</param>
         /// <param name="client">TCP client instance of the client.</param>
         /// <param name="server">TCP client instance of the server.</param>
-        public Tunnel(
-            LoggingModule logging, 
-            string sourceIp, 
-            int sourcePort, 
-            string destIp, 
-            int destPort, 
+        /// <param name="counter"></param>
+        public Tunnel(LoggingModule logging,
+            string sourceIp,
+            int sourcePort,
+            string destIp,
+            int destPort,
             string destHostname,
             int destHostPort,
-            TcpClient client, 
-            TcpClient server)
+            TcpClient client,
+            TcpClient server, TransferCounter counter)
         {
             if (logging == null) throw new ArgumentNullException(nameof(logging));
             if (String.IsNullOrEmpty(sourceIp)) throw new ArgumentNullException(nameof(sourceIp));
@@ -134,6 +134,7 @@ namespace PuppyProxy
             DestHostname = destHostname;
             DestHostPort = destHostPort;
 
+            Counter = counter;
             ClientTcpClient = client;
             ClientTcpClient.NoDelay = true;
             ClientTcpClient.Client.NoDelay = true;
@@ -150,6 +151,8 @@ namespace PuppyProxy
 
             _Active = true;
         }
+
+        public TransferCounter Counter { get; set; }
 
         #endregion
 
@@ -369,7 +372,7 @@ namespace PuppyProxy
                         else
                         {
                             byte[] data = new byte[read];
-                            Buffer.BlockCopy(buffer, 0, data, 0, read);
+                            Buffer.BlockCopy(buffer, 0, data, 0, read); 
                             return data;
                         }
                     }
@@ -516,8 +519,10 @@ namespace PuppyProxy
                     data = await StreamReadAsync(ClientTcpClient);
                     if (data != null && data.Length > 0)
                     {
-                        // Logging.Log(LoggingModule.Severity.Debug, "ClientReaderAsync " + Source() + " to " + Destination() + " read " + data.Length + " bytes");
+                        Console.WriteLine("ClientReaderAsync " + Source() + " to " + Destination() + " read " + data.Length + " bytes");
+                        Counter.IncrementClientBytes(data.Length);
                         ServerTcpClient.Client.Send(data);
+                        //Console.WriteLine($"Bytes read: {data.Length}");
                         data = null;
                     }
 
@@ -551,7 +556,8 @@ namespace PuppyProxy
                     data = await StreamReadAsync(ServerTcpClient);
                     if (data != null && data.Length > 0)
                     {
-                        // Logging.Log(LoggingModule.Severity.Debug, "ServerReaderAsync " + Destination() + " to " + Source() + " read " + data.Length + " bytes");
+                        Console.WriteLine("ServerReaderAsync " + Destination() + " to " + Source() + " read " + data.Length + " bytes");
+                        Counter.IncrementServerBytes(data.Length);
                         ClientTcpClient.Client.Send(data);
                         data = null;
                     }
