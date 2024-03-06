@@ -66,7 +66,7 @@ namespace PuppyProxy
 
                 if (String.IsNullOrEmpty(userInput))
                 {
-                    if (!String.IsNullOrEmpty(defaultAnswer)) return defaultAnswer;
+                    if (!string.IsNullOrEmpty(defaultAnswer)) return defaultAnswer;
                     if (allowNull) return null;
                     else continue;
                 }

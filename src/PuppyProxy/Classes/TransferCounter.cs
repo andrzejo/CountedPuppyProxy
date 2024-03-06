@@ -48,7 +48,7 @@ namespace PuppyProxy
             var today = Today();
             if (today != Counter.Date)
             {
-                _Logging.Debug($"Reset counter {Counter.HumanReadable()} to {today}");
+                _Logging.Info($"Reset counter {Counter.HumanReadable()} to {today}");
                 Counter.Reset(today);
             }
 
@@ -56,7 +56,7 @@ namespace PuppyProxy
             {
                 var json = Common.SerializeJson(Counter, true);
                 File.WriteAllText(path, json);
-                _Logging.Debug($"Save counter {Counter.HumanReadable()} to {path}");
+                _Logging.Info($"Save counter {Counter.HumanReadable()} to {path}");
                 Counter.Modified = false;
             }
         }
@@ -66,18 +66,24 @@ namespace PuppyProxy
             while (true)
             {
                 WriteSettings();
-                Thread.Sleep(5 * 1000);
+                Thread.Sleep(30 * 1000);
             }
         }
 
-        public void IncrementServerBytes(int bytes)
+        public void IncrementServerBytes(long bytes)
         {
-            Counter.ServerBytes += bytes;
+            lock (Counter)
+            {
+                Counter.ServerBytes += bytes;
+            }
         }
 
-        public void IncrementClientBytes(int bytes)
+        public void IncrementClientBytes(long bytes)
         {
-            Counter.ClientBytes += bytes;
+            lock (Counter)
+            {
+                Counter.ClientBytes += bytes;
+            }
         }
 
         private string FilePath()
@@ -93,8 +99,8 @@ namespace PuppyProxy
 
     public class Counter
     {
-        private int _ServerBytes;
-        private int _ClientBytes;
+        private long _ServerBytes;
+        private long _ClientBytes;
         private string _Date;
 
         public string Date
@@ -107,7 +113,7 @@ namespace PuppyProxy
             }
         }
 
-        public int ServerBytes
+        public long ServerBytes
         {
             get => _ServerBytes;
             set
@@ -117,7 +123,7 @@ namespace PuppyProxy
             }
         }
 
-        public int ClientBytes
+        public long ClientBytes
         {
             get => _ClientBytes;
             set
@@ -136,7 +142,7 @@ namespace PuppyProxy
             ClientBytes = 0;
         }
 
-        private string Format(int size)
+        private string Format(long size)
         {
             string[] suf = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
             if (size == 0)

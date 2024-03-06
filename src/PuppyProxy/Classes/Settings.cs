@@ -32,7 +32,7 @@ namespace PuppyProxy
 
         #region Public-Members
 
-        public bool EnableConsole { get; set; } = true;
+        public bool EnableConsole { get; set; } = false;
 
         public SettingsLogging Logging
         {
@@ -94,8 +94,8 @@ namespace PuppyProxy
 
     public class SettingsLogging
     {
-        private readonly int _MinimumLevel = 0;
-        private readonly int _SyslogServerPort = 514;
+        private int _MinimumLevel = 0;
+        private int _SyslogServerPort = 514;
         public bool SyslogEnable { get; set; } = true;
         public bool ConsoleEnable { get; set; } = true;
 
@@ -104,7 +104,12 @@ namespace PuppyProxy
             get => _MinimumLevel;
             set
             {
-                if (value < 0 || value > 7) throw new ArgumentOutOfRangeException(nameof(MinimumLevel));
+                if (value < 0 || value > 7)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(MinimumLevel));
+                }
+
+                _MinimumLevel = value;
             }
         }
 
@@ -115,7 +120,12 @@ namespace PuppyProxy
             get => _SyslogServerPort;
             set
             {
-                if (value < 0 || value > 65535) throw new ArgumentOutOfRangeException(nameof(SyslogServerPort));
+                if (value < 0 || value > 65535)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(SyslogServerPort));
+                }
+
+                _SyslogServerPort = value;
             }
         }
     }
